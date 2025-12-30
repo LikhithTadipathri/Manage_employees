@@ -1,0 +1,25 @@
+Invoke-WebRequest : Unable to connect to the remote server
+At D:\Go\src\Task\test_leave_api.ps1:13 char:14
++ $loginResp = Invoke-WebRequest -Uri "$baseURL/auth/login" `
++              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Invoke-WebRequest], WebException
+    + FullyQualifiedErrorId : System.Net.WebException,Microsoft.PowerShell.Commands. 
+   InvokeWebRequestCommand
+ 
+ConvertFrom-Json : Cannot bind argument to parameter 'InputObject' because it is 
+null.
+At D:\Go\src\Task\test_leave_api.ps1:19 char:35
++ $loginJson = $loginResp.Content | ConvertFrom-Json
++                                   ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [ConvertFrom-Json], ParameterBindingV 
+   alidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationErrorNullNotAllowed,Microso 
+   ft.PowerShell.Commands.ConvertFromJsonCommand
+ 
+You cannot call a method on a null-valued expression.
+At D:\Go\src\Task\test_leave_api.ps1:21 char:22
++ Write-Host "Token: $($loginJson.token.Substring(0,30))..."
++                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) [], RuntimeException
+    + FullyQualifiedErrorId : InvokeMethodOnNull
+ 

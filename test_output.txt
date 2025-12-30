@@ -1,0 +1,4 @@
+=== TEST 1: Login as john_doe ===
+Login Status: 
+Token: ...
+Failed to get token!

@@ -1,0 +1,561 @@
+{
+  "info": {
+    "_postman_id": "employee-api-v17-email-notifications",
+    "name": "Employee API v17 - With Email Notifications",
+    "description": "Complete Employee Management API v17 with SMTP Email Notifications for Leave Events. Includes all v16 endpoints plus email notification triggers. All leave actions (apply, approve, reject) trigger conditional emails. MATERNITY leave validation checks gender (Female) & marital_status (true).",
+    "version": "17.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          },
+          "description": "Check system health status"
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login - SuperAdmin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"superadmin\",\n  \"password\": \"passkey\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"superadmin_token\", jsonData.data.token);",
+                  "    pm.environment.set(\"superadmin_user_id\", jsonData.data.user.id);",
+                  "    console.log('SuperAdmin token saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "description": "Login with superadmin credentials (username: superadmin, password: passkey)\n\n**Auto-saves token to {{superadmin_token}}**"
+        },
+        {
+          "name": "Login - Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"admin_token\", jsonData.data.token);",
+                  "    pm.environment.set(\"admin_user_id\", jsonData.data.user.id);",
+                  "    console.log('Admin token saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "description": "Login with admin credentials (username: admin, password: admin123)\n\n**Auto-saves token to {{admin_token}}**"
+        },
+        {
+          "name": "Login - Employee",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"jane_doe\",\n  \"password\": \"secure_pass_123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"employee_token\", jsonData.data.token);",
+                  "    pm.environment.set(\"employee_user_id\", jsonData.data.user.id);",
+                  "    console.log('Employee token saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "description": "Login with employee credentials (username: jane_doe, password: secure_pass_123)\n\n**Auto-saves token to {{employee_token}}**"
+        }
+      ]
+    },
+    {
+      "name": "Leave Management - with Email Notifications",
+      "item": [
+        {
+          "name": "Apply Leave (ANNUAL - PAID) - Triggers Email to Employee & Admins",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employee_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leave_type\": \"ANNUAL\",\n  \"start_date\": \"2025-12-31\",\n  \"end_date\": \"2026-01-05\",\n  \"reason\": \"Year-end vacation\",\n  \"notes\": \"Planning a relaxing vacation with family\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/leave/apply",
+              "host": ["{{base_url}}"],
+              "path": ["leave", "apply"]
+            }
+          }
+        },
+        {
+          "name": "Apply Leave (MATERNITY - UNPAID) - Triggers Email, No Salary Deduction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employee_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leave_type\": \"MATERNITY\",\n  \"start_date\": \"2025-12-30\",\n  \"end_date\": \"2026-02-28\",\n  \"reason\": \"Maternity leave\",\n  \"notes\": \"Expected delivery date: January 15, 2026\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/leave/apply",
+              "host": ["{{base_url}}"],
+              "path": ["leave", "apply"]
+            }
+          }
+        },
+        {
+          "name": "Apply Leave (SICK - PAID) - Paid Leave with Deduction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employee_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leave_type\": \"SICK\",\n  \"start_date\": \"2025-12-29\",\n  \"end_date\": \"2025-12-30\",\n  \"reason\": \"Medical appointment and recovery\",\n  \"notes\": \"Doctor's appointment scheduled\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/leave/apply",
+              "host": ["{{base_url}}"],
+              "path": ["leave", "apply"]
+            }
+          }
+        },
+        {
+          "name": "Get My Leave Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employee_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/leave/my-requests",
+              "host": ["{{base_url}}"],
+              "path": ["leave", "my-requests"]
+            }
+          }
+        },
+        {
+          "name": "Get All Leave Requests (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/leave/all",
+              "host": ["{{base_url}}"],
+              "path": ["leave", "all"]
+            }
+          }
+        },
+        {
+          "name": "Approve Leave (PAID) - Triggers Conditional Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Approved - enjoy your vacation! Plan to complete your handover before departure.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/leave/approve/1",
+              "host": ["{{base_url}}"],
+              "path": ["leave", "approve", "1"]
+            }
+          }
+        },
+        {
+          "name": "Approve Leave (UNPAID) - Triggers Conditional Email No Deduction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Approved - maternity leave granted as per company policy. Wish you all the best!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/leave/approve/2",
+              "host": ["{{base_url}}"],
+              "path": ["leave", "approve", "2"]
+            }
+          }
+        },
+        {
+          "name": "Reject Leave - Triggers Email with Reason",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Project deadline is on that date. Critical team member needed for delivery. Please reschedule.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/leave/reject/3",
+              "host": ["{{base_url}}"],
+              "path": ["leave", "reject", "3"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Email Notifications - Monitoring & Verification",
+      "item": [
+        {
+          "name": "Get Admin Overview",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/overview",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "overview"]
+            }
+          }
+        },
+        {
+          "name": "Get Admin Records",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/records",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "records"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Employee Management",
+      "item": [
+        {
+          "name": "Get All Employees (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/employees",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "employees"]
+            }
+          }
+        },
+        {
+          "name": "Create Employee",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"jane_doe\",\n  \"password\": \"secure_pass_123\",\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Doe\",\n  \"email\": \"jane.doe@company.com\",\n  \"phone\": \"+91-9876543210\",\n  \"position\": \"Senior Software Engineer\",\n  \"salary\": 75000,\n  \"gender\": \"Female\",\n  \"marital_status\": true,\n  \"hired_date\": \"2023-01-01T00:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/employees",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "employees"]
+            }
+          }
+        },
+        {
+          "name": "Get Employee by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/employees/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "employees", "1"]
+            }
+          }
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employee_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Update Employee",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Smith\",\n  \"email\": \"jane.smith@company.com\",\n  \"phone\": \"+91-9876543211\",\n  \"position\": \"Lead Engineer\",\n  \"salary\": 85000,\n  \"gender\": \"Female\",\n  \"marital_status\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/employees/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "employees", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Leave Balance Management",
+      "item": [
+        {
+          "name": "Get My Leave Balance",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employee_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/leave/balance",
+              "host": ["{{base_url}}"],
+              "path": ["leave", "balance"]
+            }
+          }
+        },
+        {
+          "name": "Get Leave Balance by Type",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{employee_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/leave/balance/ANNUAL",
+              "host": ["{{base_url}}"],
+              "path": ["leave", "balance", "ANNUAL"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "superadmin_token",
+      "value": "",
+      "type": "string",
+      "description": "SuperAdmin JWT Token - Set by Login - SuperAdmin endpoint"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string",
+      "description": "Admin JWT Token - Set by Login - Admin endpoint"
+    },
+    {
+      "key": "employee_token",
+      "value": "",
+      "type": "string",
+      "description": "Employee JWT Token - Set by Login - Employee endpoint"
+    },
+    {
+      "key": "superadmin_user_id",
+      "value": "",
+      "type": "string",
+      "description": "SuperAdmin User ID from login response"
+    },
+    {
+      "key": "admin_user_id",
+      "value": "",
+      "type": "string",
+      "description": "Admin User ID from login response"
+    },
+    {
+      "key": "employee_user_id",
+      "value": "",
+      "type": "string",
+      "description": "Employee User ID from login response"
+    }
+  ]
+}
