@@ -288,8 +288,18 @@ func (s *Server) Start() error {
 		Handler: s.router,
 	}
 
-	errors.LogInfo("Starting server on port " + addr)
+	// Set up TLS if enabled
+	if s.config.TLS.IsEnabled() {
+		tlsConfig, err := s.config.TLS.GetTLSConfig()
+		if err != nil {
+			return err
+		}
+		s.httpServer.TLSConfig = tlsConfig
+		errors.LogInfo("Starting HTTPS server on port " + addr)
+		return s.httpServer.ListenAndServeTLS(s.config.TLS.CertFile, s.config.TLS.KeyFile)
+	}
 
+	errors.LogInfo("Starting HTTP server on port " + addr)
 	return s.httpServer.ListenAndServe()
 }
 

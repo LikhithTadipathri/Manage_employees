@@ -11,10 +11,11 @@ import (
 
 // Config holds all application configuration
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	JWT      JWTConfig
-	Logger   LoggerConfig
+	Server      ServerConfig
+	Database    DatabaseConfig
+	JWT         JWTConfig
+	Logger      LoggerConfig
+	TLS         TLSConfig
 	Environment string
 }
 
@@ -91,6 +92,7 @@ func LoadConfig() (*Config, error) {
 			Format: getEnv("LOG_FORMAT", loggerCfg.Format),
 			Output: getEnv("LOG_OUTPUT", loggerCfg.Output),
 		},
+		TLS: *LoadTLSConfig(),
 	}
 
 	return config, nil
