@@ -71,6 +71,13 @@ func (eq *EmailQueue) Stop() error {
 	return nil
 }
 
+// IsRunning returns whether the email queue is currently running
+func (eq *EmailQueue) IsRunning() bool {
+	eq.mu.Lock()
+	defer eq.mu.Unlock()
+	return eq.running
+}
+
 // Enqueue adds a notification to the queue
 func (eq *EmailQueue) Enqueue(n *notification.Notification) error {
 	eq.mu.Lock()

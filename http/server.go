@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -45,8 +46,33 @@ func NewServer(cfg *config.Config, db *sql.DB) *Server {
 
 // Setup sets up all routes and middleware
 func (s *Server) Setup() {
-	// Add global middleware
+	// Add global middleware in order
+	// 1. Panic recovery
+	s.router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				if err := recover(); err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					w.Write([]byte("Internal server error"))
+				}
+			}()
+			next.ServeHTTP(w, r)
+		})
+	})
+
+	// 2. Correlation ID
+	s.router.Use(middlewares.CorrelationIDMiddleware())
+
+	// 3. CORS
 	s.router.Use(middlewares.CORSMiddleware())
+
+	// 4. Security Headers
+	s.router.Use(middlewares.SecurityHeadersMiddleware())
+
+	// 5. Rate Limiting
+	s.router.Use(middlewares.RateLimitMiddleware())
+
+	// 6. Request Logger
 	s.router.Use(middlewares.LoggerMiddleware)
 
 	// Initialize JWT manager
@@ -120,8 +146,9 @@ func (s *Server) Setup() {
 	authHandler := handlers.NewAuthHandlerWithServices(userServiceInstance, jwtManager, employeeRepo, leaveServiceInstance)
 	dashboardHandler := handlers.NewDashboardHandler(employeeServiceInstance, userServiceInstance)
 
-	// Health check endpoint (no auth required)
+	// Health check endpoints (no auth required)
 	s.router.Get("/health", s.healthCheck)
+	s.router.Get("/readiness", s.healthCheck)
 
 	// Auth routes (no auth required)
 	s.router.Post("/auth/login", authHandler.Login)
@@ -194,31 +221,49 @@ func (s *Server) Setup() {
 func (s *Server) healthCheck(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	health := map[string]string{
+	// Check if this is a readiness probe
+	isReadinessProbe := r.URL.Path == "/readiness"
+
+	health := map[string]interface{}{
 		"status":    "healthy",
-		"postgres":  "ok",
-		"sqlite":    "ok",
-		
+		"timestamp": time.Now().Format(time.RFC3339),
+		"checks": map[string]interface{}{
+			"database": "ok",
+			"email_queue": "ok",
+		},
 	}
 
-	// Check Postgres
-	if s.PostgresDB != nil {
-		if err := s.PostgresDB.Ping(); err != nil {
-			health["postgres"] = "down"
-			health["status"] = "degraded" // Service still runs on SQLite fallback
+	checks := health["checks"].(map[string]interface{})
+
+	// Check database
+	if s.db != nil {
+		if err := s.db.Ping(); err != nil {
+			checks["database"] = "error"
+			health["status"] = "unhealthy"
+		} else {
+			// Get database stats
+			stats := s.db.Stats()
+			checks["database"] = map[string]interface{}{
+				"status": "ok",
+				"open_connections": stats.OpenConnections,
+				"in_use": stats.InUse,
+				"idle": stats.Idle,
+				"max_open_conns": stats.MaxOpenConnections,
+			}
 		}
 	} else {
-		health["postgres"] = "Good"
+		checks["database"] = "unavailable"
+		health["status"] = "unhealthy"
 	}
 
-	// Check SQLite
-	if s.SQLiteDB != nil {
-		if err := s.SQLiteDB.Ping(); err != nil {
-			health["sqlite"] = "down"
-			health["status"] = "unhealthy" // No DB working
+	// Check email queue
+	if s.emailQueue != nil {
+		if !s.emailQueue.IsRunning() {
+			checks["email_queue"] = "stopped"
+			if isReadinessProbe {
+				health["status"] = "unhealthy"
+			}
 		}
-	} else {
-		health["sqlite"] = "Good"
 	}
 
 	// Decide status code based on components

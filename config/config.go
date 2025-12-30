@@ -14,6 +14,8 @@ type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 	JWT      JWTConfig
+	Logger   LoggerConfig
+	Environment string
 }
 
 // ServerConfig holds server configuration
@@ -60,7 +62,11 @@ func LoadConfig() (*Config, error) {
 	// If no .env found, try loading from current directory anyway
 	_ = godotenv.Load()
 
+	environment := getEnv("ENVIRONMENT", "development")
+	loggerCfg := GetLoggerConfig(environment)
+
 	config := &Config{
+		Environment: environment,
 		Server: ServerConfig{
 			Port: getEnvAsInt("SERVER_PORT", 8080),
 			Host: getEnv("SERVER_HOST", "0.0.0.0"),
@@ -79,6 +85,11 @@ func LoadConfig() (*Config, error) {
 		JWT: JWTConfig{
 			Secret:          getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
 			ExpirationHours: getEnvAsInt("JWT_EXPIRATION_HOURS", 1),
+		},
+		Logger: LoggerConfig{
+			Level:  getEnv("LOG_LEVEL", loggerCfg.Level),
+			Format: getEnv("LOG_FORMAT", loggerCfg.Format),
+			Output: getEnv("LOG_OUTPUT", loggerCfg.Output),
 		},
 	}
 
