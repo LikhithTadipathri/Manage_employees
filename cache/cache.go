@@ -70,10 +70,9 @@ func (c *Cache) SetWithTTL(key string, value interface{}, ttl time.Duration) {
 // Get retrieves a value from the cache
 func (c *Cache) Get(key string) (interface{}, bool) {
 	c.mu.RLock()
-	defer c.mu.RUnlock()
-
 	entry, exists := c.data[key]
 	if !exists {
+		c.mu.RUnlock()
 		return nil, false
 	}
 
@@ -86,7 +85,9 @@ func (c *Cache) Get(key string) (interface{}, bool) {
 		return nil, false
 	}
 
-	return entry.Value, true
+	val := entry.Value
+	c.mu.RUnlock()
+	return val, true
 }
 
 // GetJSON retrieves and unmarshals a JSON value from cache
